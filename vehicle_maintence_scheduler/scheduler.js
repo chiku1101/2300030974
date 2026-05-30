@@ -1,46 +1,70 @@
-function normalizeNumber(val){
+function normalizeNumber(val) {
     const n = Number(val);
-    return Number.isFinite(n) && !Number.isNaN(n) ? Math.floor(n) : 0;
+    return Number.isFinite(n) ? Math.floor(n) : 0;
 }
 
-function maxImpact(hours, vehicles){
-    hours = Math.max(0, Math.floor(Number(hours) || 0));
-    const n = vehicles.length || 0;
-    const dp = Array.from({length: n+1}, () => Array(hours+1).fill(0));
+function maxImpact(hours, vehicles) {
 
-    for(let i = 1; i <= n; i++){
-        const v = vehicles[i-1] || {};
-        const dur = normalizeNumber(v.Duration || v.duration || v.MechanicHours || v.hours);
-        const impact = normalizeNumber(v.Impact || v.impact || v.OperationalImpact || v.score);
-        for(let w = 0; w <= hours; w++){
-            if (dur <= w)
-                dp[i][w] = Math.max(dp[i-1][w], dp[i-1][w-dur] + impact);
-            else
-                dp[i][w] = dp[i-1][w];
+    hours = normalizeNumber(hours);
+
+    const n = vehicles.length;
+
+    const dp = Array.from(
+        { length: n + 1 },
+        () => Array(hours + 1).fill(0)
+    );
+
+    for (let i = 1; i <= n; i++) {
+
+        const vehicle = vehicles[i - 1];
+
+        const duration = normalizeNumber(
+            vehicle.Duration
+        );
+
+        const impact = normalizeNumber(
+            vehicle.Impact
+        );
+
+        for (let w = 0; w <= hours; w++) {
+
+            if (duration <= w) {
+
+                dp[i][w] = Math.max(
+                    dp[i - 1][w],
+                    dp[i - 1][w - duration] + impact
+                );
+
+            } else {
+
+                dp[i][w] = dp[i - 1][w];
+            }
         }
     }
 
-    let res = dp[n][hours];
+    let selected = [];
     let w = hours;
-    const sel = [];
-    for(let i = n; i > 0 && res > 0; i--){
-        if (res !== dp[i-1][w]){
-            const v = vehicles[i-1] || {};
-            sel.push(v.TaskID || v.TaskId || v.id || v.ID || null);
-            const dur = normalizeNumber(v.Duration || v.duration || v.MechanicHours || v.hours);
-            const impact = normalizeNumber(v.Impact || v.impact || v.OperationalImpact || v.score);
-            res -= impact;
-            w -= dur;
+
+    for (let i = n; i > 0; i--) {
+
+        if (dp[i][w] !== dp[i - 1][w]) {
+
+            selected.push(
+                vehicles[i - 1].TaskID
+            );
+
+            w -= normalizeNumber(
+                vehicles[i - 1].Duration
+            );
         }
     }
 
     return {
         maxImpact: dp[n][hours],
-        selectedIDs: sel.reverse()
+        selectedIDs: selected.reverse()
     };
 }
 
 module.exports = {
     maxImpact
 };
-
